@@ -40,19 +40,11 @@ class AdvertisementSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """Метод для валидации. Вызывается при создании и обновлении."""
         user = self.context['request'].user
-        if self.context['request'].method == 'POST':
-            if Advertisement.objects.filter(creator=user, status='OPEN').count() < 10:
-                return data
-            else:
-                raise serializers.ValidationError('The maximum number of open ads is 10')
-        if self.context['request'].method == 'PATCH' and Advertisement.objects.filter(status='OPEN').count() >= 1:
-            status = Advertisement.objects.get(id=self.context['request'].parser_context['kwargs']['pk']).status
-            ads_count = Advertisement.objects.filter(creator=self.context['request'].user, status='OPEN').count()
-            if status != data['status'] and ads_count < 10:
-                return data
-            elif status != data['status'] and ads_count == 10 and status == 'OPEN':
-                return data
-            elif status != data['status'] and ads_count == 10 and status == 'CLOSED':
-                raise serializers.ValidationError('The maximum number of open ads is 10')
-            else:
-                raise serializers.ValidationError('Change Error')
+
+        open_ads_count = Advertisement.objects.filter(creator=user, status='OPEN').count()
+
+        if open_ads_count >= 10 and (self.context['request'].method == 'POST' or data.get('status') == 'OPEN'):
+            raise serializers.ValidationError(...)
+
+        return data
+
